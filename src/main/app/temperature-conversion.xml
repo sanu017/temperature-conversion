@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:jdbc-ee="http://www.mulesoft.org/schema/mule/ee/jdbc" xmlns:wmq="http://www.mulesoft.org/schema/mule/ee/wmq" xmlns:jersey="http://www.mulesoft.org/schema/mule/jersey" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:cxf="http://www.mulesoft.org/schema/mule/cxf" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" version="CE-3.4.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/cxf http://www.mulesoft.org/schema/mule/cxf/current/mule-cxf.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/jersey/current/mule-jersey.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/ee/wmq http://www.mulesoft.org/schema/mule/ee/wmq/current/mule-wmq-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/jdbc http://www.mulesoft.org/schema/mule/ee/jdbc/current/mule-jdbc-ee.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd">
+    
+    <custom-transformer name="TemperatureToCelsiusTransformer" class="com.anubhav.mule.transformer.TemperatureToCelsiusTransformer" doc:name="Java"/>
+    <custom-transformer name="TemperatureToFahrenheitTransformer" class="com.anubhav.mule.transformer.TemperatureToFahrenheitTransformer" doc:name="Java"/>
+    
+    <flow name="temperature-conversionFlow1" doc:name="temperature-conversionFlow1">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8081" doc:name="HTTP"/>
+        <logger message="'LOG  MESSAGE  1:' + #[payload]" level="ERROR" doc:name="Logger"/>
+        <jersey:resources doc:name="REST">
+            <component class="com.anubhav.mule.tempconversion.TemperatureService"/>
+        </jersey:resources>
+        <logger message="&quot;LOGGER MESSAGE 2: &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="&quot;LOGGER MESSAGE 3:&quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <response>
+            <logger message="&quot;LOGGER MESSAGE 9: &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        </response>
+        <component class="com.anubhav.mule.tempconversion.JsonToTemperature" doc:name="JsonToTemperatureObject"/>
+        <logger message="&quot;LOG  MESSAGE : OBJECT= &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <response>
+            <object-to-string-transformer doc:name="Object to String"/>
+        </response>
+        <choice doc:name="Choice">
+            <when expression="#[payload.unit == 'FAHRENHEIT']">
+                <flow-ref name="rest-fahrenheit-to-celsius" doc:name="Flow Reference"/>
+            </when>
+            <otherwise>
+                <flow-ref name="rest-celsius-to-fahrenheit" doc:name="Flow Reference"/>
+            </otherwise>
+        </choice>
+    </flow>
+    <sub-flow name="rest-fahrenheit-to-celsius" doc:name="rest-fahrenheit-to-celsius">
+        <transformer ref="TemperatureToFahrenheitTransformer" doc:name="Transformer Reference"/>
+        <logger message="&quot;LOGGER MESSAGE 7:&quot; + #[payload.fahrenheit]" level="INFO" doc:name="Logger"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="&quot;LOGGER MESSAGE 8: &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <set-property propertyName="Content-Type" value="application/x-www-form-urlencoded" doc:name="Property"/>
+        <http:outbound-endpoint exchange-pattern="request-response" method="POST" address="http://www.w3schools.com/webservices/tempconvert.asmx/FahrenheitToCelsius" doc:name="HTTP" mimeType="application/x-www-form-urlencoded"/>
+    </sub-flow>
+    <sub-flow name="rest-celsius-to-fahrenheit" doc:name="rest-celsius-to-fahrenheit">
+        <transformer ref="TemperatureToCelsiusTransformer" doc:name="Transformer Reference"/>
+        <logger message="&quot;LOGGER MESSAGE 7:&quot; + #[payload.celsius]" level="INFO" doc:name="Logger"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="&quot;LOGGER MESSAGE 8: &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <set-property propertyName="Content-Type" value="application/x-www-form-urlencoded" doc:name="Property"/>
+        <http:outbound-endpoint exchange-pattern="request-response" method="POST" address="http://www.w3schools.com/webservices/tempconvert.asmx/CelsiusToFahrenheit" doc:name="HTTP" mimeType="application/x-www-form-urlencoded"/>
+    </sub-flow>
+    <sub-flow name="soap-fahrenheit-to-celsius" doc:name="soap-fahrenheit-to-celsius">
+        <transformer ref="TemperatureToFahrenheitTransformer" doc:name="Transformer Reference"/>
+        <cxf:jaxws-client operation="fahrenheitToCelsius" clientClass="com.w3schools.webservices.TempConvert" port="TempConvertSoap12" doc:name="Farenheit to Celsius"/>
+        <http:outbound-endpoint exchange-pattern="request-response" method="POST" address="http://www.w3schools.com/webservices/tempconvert.asmx" doc:name="HTTP"/>
+    </sub-flow>
+    <sub-flow name="soap-celsius-to-fahrenheit" doc:name="soap-celsius-to-fahrenheit">
+        <transformer ref="TemperatureToCelsiusTransformer" doc:name="Transformer Reference"/>
+        <cxf:jaxws-client operation="celsiusToFahrenheit" clientClass="com.w3schools.webservices.TempConvert" port="TempConvertSoap" doc:name="SOAP"/>
+        <http:outbound-endpoint exchange-pattern="request-response" method="POST" address="http://www.w3schools.com/webservices/tempconvert.asmx" doc:name="HTTP"/>
+    </sub-flow>
+</mule>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jersey="http://www.mulesoft.org/schema/mule/jersey" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:spring="http://www.springframework.org/schema/beans" version="EE-3.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/jersey http://www.mulesoft.org/schema/mule/jersey/current/mule-jersey.xsd">
+    <flow name="testFlow1" doc:name="testFlow1">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8080" doc:name="HTTP"/>
+        <set-property propertyName="Celsius" value="45" doc:name="Property"/>
+        <response>
+            <logger message="&quot;LOGGGGGG 2: &quot; + #[message]" level="INFO" doc:name="Logger"/>
+        </response>
+        <http:body-to-parameter-map-transformer doc:name="Body to Parameter Map"/>
+        <logger message="&quot;LOGGGG 1: &quot; + #[payload]" level="INFO" doc:name="Logger"/>
+        <http:outbound-endpoint exchange-pattern="request-response" path="test/test" method="POST" address="http://localhost:8082/test/m" mimeType="application/x-www-form-urlencoded" doc:name="HTTP"/>
+    </flow>
+    <flow name="testFlow2" doc:name="testFlow2">
+        <http:inbound-endpoint exchange-pattern="request-response" host="localhost" port="8082" doc:name="HTTP"/>
+        <logger message="&quot;LOGGGG 3: &quot; + #[message]" level="INFO" doc:name="Logger"/>
+        <jersey:resources doc:name="REST">
+            <component class="com.anubhav.mule.tempconversion.PostTestService"/>
+        </jersey:resources>
+    </flow>
+</mule>
